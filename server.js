@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
-const db = require('./database');
+const { User, Expense, Budget, Notification, Settings } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,32 +10,55 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 
-// Auth: Sign Up
-app.post('/api/signup', (req, res) => {
-    const { name, email, password, role, managerId, created, uniqueId } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 10);
+// Helper to transform MongoDB document to frontend format
+const transform = (doc) => {
+    if (!doc) return doc;
+    const obj = doc.toObject();
+    obj.id = obj._id.toString();
+    delete obj._id;
+    delete obj.__v;
+    return obj;
+};
 
-    db.run(
-        `INSERT INTO users (name, email, password, role, managerId, created, uniqueId) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [name, email, hashedPassword, role, managerId, created, uniqueId],
-        function (err) {
-            if (err) {
-                return res.status(400).json({ error: 'User already exists or database error' });
-            }
-            const userId = this.lastID;
-            // Create default settings for new user
-            db.run(`INSERT INTO settings (userId) VALUES (?)`, [userId]);
-            res.json({ id: userId, name, email, role });
-        }
-    );
+// Auth: Sign Up
+app.post('/api/signup', async (req, res) => {
+    try {
+        const { name, email, password, role, managerId, created, uniqueId } = req.body;
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        const newUser = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            managerId: managerId || null,
+            created,
+            uniqueId
+        });
+
+        const savedUser = await newUser.save();
+
+        // Create default settings for new user
+        await new Settings({ userId: savedUser._id }).save();
+
+        res.json(transform(savedUser));
+    } catch (err) {
+        console.error('Signup Error:', err.message);
+        res.status(400).json({
+            error: err.message.includes('duplicate key')
+                ? 'Email already in use'
+                : 'Database error: ' + err.message
+        });
+    }
 });
 
 // Auth: Login
-app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
 
-    db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
-        if (err || !user) {
+        if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
@@ -44,180 +67,156 @@ app.post('/api/login', (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
+        res.json(transform(user));
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all data
+app.get('/api/data', async (req, res) => {
+    try {
+        const [users, expenses, budgets, notifications, settingsDoc] = await Promise.all([
+            User.find({}),
+            Expense.find({}),
+            Budget.find({}),
+            Notification.find({}),
+            Settings.findOne({}) // Just first one as global for now
+        ]);
+
         res.json({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            managerId: user.managerId,
-            uniqueId: user.uniqueId,
-            profileImage: user.profileImage,
-            twoFactorEnabled: !!user.twoFactorEnabled,
-            created: user.created
+            users: users.map(transform),
+            expenses: expenses.map(e => e.toObject()), // Expenses already have a custom 'id' field in schema
+            budgets: budgets.map(b => ({ id: b._id.toString(), category: b.category, limit: b.limit })),
+            notifications: notifications.map(n => n.toObject()),
+            settings: settingsDoc ? { sessionTimeout: settingsDoc.sessionTimeout, loginNotifications: settingsDoc.loginNotifications } : { sessionTimeout: 30, loginNotifications: true }
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Get all data (for the logged in user context)
-app.get('/api/data', (req, res) => {
-    // For simplicity in this project, we return everything and let frontend filter, 
-    // but in a real app you'd filter by role here.
-    const responseData = {
-        users: [],
-        expenses: [],
-        budgets: [],
-        notifications: [],
-        settings: {}
-    };
-
-    db.all(`SELECT id, name, email, role, managerId, created, uniqueId, profileImage, twoFactorEnabled FROM users`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        responseData.users = rows.map(r => ({ ...r, twoFactorEnabled: !!r.twoFactorEnabled }));
-
-        db.all(`SELECT * FROM expenses`, [], (err, rows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            responseData.expenses = rows;
-
-            db.all(`SELECT * FROM budgets`, [], (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
-                responseData.budgets = rows.map(r => ({ id: r.id, category: r.category, limit: r.limit_amount }));
-
-                db.all(`SELECT * FROM notifications`, [], (err, rows) => {
-                    if (err) return res.status(500).json({ error: err.message });
-                    responseData.notifications = rows.map(r => ({ ...r, read: !!r.read }));
-
-                    // We just use a global settings or first user's settings for now to match frontend expectations
-                    db.get(`SELECT * FROM settings LIMIT 1`, [], (err, row) => {
-                        responseData.settings = row ? { sessionTimeout: row.sessionTimeout, loginNotifications: !!row.loginNotifications } : { sessionTimeout: 30, loginNotifications: true };
-                        res.json(responseData);
-                    });
-                });
-            });
-        });
-    });
+// Expenses
+app.post('/api/expenses', async (req, res) => {
+    try {
+        const expenses = Array.isArray(req.body) ? req.body : [req.body];
+        await Expense.insertMany(expenses);
+        res.json({ message: 'Expenses saved' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Sync/Save Data (General endpoint for updates if needed, but let's do specific ones)
-
-app.post('/api/expenses', (req, res) => {
-    const expenses = Array.isArray(req.body) ? req.body : [req.body];
-    const stmt = db.prepare(`INSERT INTO expenses (id, employeeId, name, amount, category, date, status) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-
-    expenses.forEach(exp => {
-        stmt.run([exp.id, exp.employeeId, exp.name, exp.amount, exp.category, exp.date, exp.status]);
-    });
-    stmt.finalize();
-    res.json({ message: 'Expenses saved' });
-});
-
-app.put('/api/expenses/:id', (req, res) => {
-    const { status } = req.body;
-    db.run(`UPDATE expenses SET status = ? WHERE id = ?`, [status, req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.put('/api/expenses/:id', async (req, res) => {
+    try {
+        const { status } = req.body;
+        await Expense.findOneAndUpdate({ id: req.params.id }, { status });
         res.json({ message: 'Expense updated' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/budgets', (req, res) => {
-    const { category, limit } = req.body;
-    db.run(
-        `INSERT INTO budgets (category, limit_amount) VALUES (?, ?) ON CONFLICT(category) DO UPDATE SET limit_amount = excluded.limit_amount`,
-        [category, limit],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Budget saved' });
-        }
-    );
+// Budgets
+app.post('/api/budgets', async (req, res) => {
+    try {
+        const { category, limit } = req.body;
+        await Budget.findOneAndUpdate(
+            { category },
+            { limit },
+            { upsert: true, new: true }
+        );
+        res.json({ message: 'Budget saved' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/budgets/:id', (req, res) => {
-    db.run(`DELETE FROM budgets WHERE id = ?`, [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/budgets/:id', async (req, res) => {
+    try {
+        await Budget.findByIdAndDelete(req.params.id);
         res.json({ message: 'Budget deleted' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.put('/api/users/:id', (req, res) => {
-    const { name, phone, profileImage, twoFactorEnabled, managerId, password } = req.body;
-    let query = `UPDATE users SET name = COALESCE(?, name), managerId = COALESCE(?, managerId)`;
-    let params = [name, managerId];
+// Users Update/Delete
+app.put('/api/users/:id', async (req, res) => {
+    try {
+        const { name, phone, profileImage, twoFactorEnabled, managerId, password } = req.body;
+        const update = {};
+        if (name) update.name = name;
+        if (phone) update.phone = phone;
+        if (profileImage !== undefined) update.profileImage = profileImage;
+        if (twoFactorEnabled !== undefined) update.twoFactorEnabled = !!twoFactorEnabled;
+        if (managerId) update.managerId = managerId;
+        if (password) update.password = bcrypt.hashSync(password, 10);
 
-    // Phone is not in the original schema I wrote, let me fix database.js or add it here
-    // Actually I'll just skip phone for a moment or assume it's added.
-
-    if (profileImage !== undefined) {
-        query += `, profileImage = ?`;
-        params.push(profileImage);
-    }
-    if (twoFactorEnabled !== undefined) {
-        query += `, twoFactorEnabled = ?`;
-        params.push(twoFactorEnabled ? 1 : 0);
-    }
-    if (password !== undefined) {
-        query += `, password = ?`;
-        params.push(bcrypt.hashSync(password, 10));
-    }
-
-    query += ` WHERE id = ?`;
-    params.push(req.params.id);
-
-    db.run(query, params, (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+        await User.findByIdAndUpdate(req.params.id, update);
         res.json({ message: 'User updated' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.delete('/api/users/:id', (req, res) => {
-    db.run(`DELETE FROM users WHERE id = ?`, [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
         res.json({ message: 'User deleted' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/notifications', (req, res) => {
-    const notes = Array.isArray(req.body) ? req.body : [req.body];
-    const stmt = db.prepare(`INSERT INTO notifications (id, recipientId, message, date, read) VALUES (?, ?, ?, ?, ?)`);
-    notes.forEach(n => {
-        stmt.run([n.id, n.recipientId, n.message, n.date, n.read ? 1 : 0]);
-    });
-    stmt.finalize();
-    res.json({ message: 'Notifications saved' });
+// Notifications
+app.post('/api/notifications', async (req, res) => {
+    try {
+        const notes = Array.isArray(req.body) ? req.body : [req.body];
+        await Notification.insertMany(notes);
+        res.json({ message: 'Notifications saved' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/notifications/clear', (req, res) => {
-    const { recipientId } = req.body;
-    db.run(`DELETE FROM notifications WHERE recipientId = ?`, [recipientId], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.post('/api/notifications/clear', async (req, res) => {
+    try {
+        const { recipientId } = req.body;
+        await Notification.deleteMany({ recipientId });
         res.json({ message: 'Notifications cleared' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.put('/api/settings', (req, res) => {
-    const { sessionTimeout, loginNotifications } = req.body;
-    // Assuming global settings for now as per frontend
-    db.run(
-        `UPDATE settings SET sessionTimeout = ?, loginNotifications = ?`,
-        [sessionTimeout, loginNotifications ? 1 : 0],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Settings updated' });
-        }
-    );
+// Settings
+app.put('/api/settings', async (req, res) => {
+    try {
+        const { sessionTimeout, loginNotifications } = req.body;
+        await Settings.findOneAndUpdate({}, { sessionTimeout, loginNotifications: !!loginNotifications }, { upsert: true });
+        res.json({ message: 'Settings updated' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/clear-all', (req, res) => {
-    db.serialize(() => {
-        db.run(`DELETE FROM expenses`);
-        db.run(`DELETE FROM budgets`);
-        db.run(`DELETE FROM notifications`);
-        // We probably don't want to delete users except admins? 
-        // The original clearData says "Employees and expenses reset to zero"
-        db.run(`DELETE FROM users WHERE role != 'ADMIN'`);
-    });
-    res.json({ message: 'Data cleared' });
+// Clear All
+app.post('/api/clear-all', async (req, res) => {
+    try {
+        await Promise.all([
+            Expense.deleteMany({}),
+            Budget.deleteMany({}),
+            Notification.deleteMany({}),
+            User.deleteMany({ role: { $ne: 'ADMIN' } })
+        ]);
+        res.json({ message: 'Data cleared' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// Serve static frontend (for production deployment)
+// Serve static frontend
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });

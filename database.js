@@ -1,67 +1,70 @@
-const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir);
-}
+// MongoDB Connection URI - using provided local connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ledgercore';
 
-const dbPath = path.join(dataDir, '.ledgercore.db');
-const db = new sqlite3.Database(dbPath);
+mongoose.connect(MONGODB_URI)
+    .then(() => console.log('Successfully connected to MongoDB: ' + MONGODB_URI))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-db.serialize(() => {
-    // Users table
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT,
-        role TEXT,
-        phone TEXT,
-        managerId INTEGER,
-        created TEXT,
-        uniqueId TEXT,
-        profileImage TEXT,
-        twoFactorEnabled INTEGER DEFAULT 0
-    )`);
-
-    // Expenses table
-    db.run(`CREATE TABLE IF NOT EXISTS expenses (
-        id TEXT PRIMARY KEY,
-        employeeId INTEGER,
-        name TEXT,
-        amount REAL,
-        category TEXT,
-        date TEXT,
-        status TEXT,
-        FOREIGN KEY (employeeId) REFERENCES users(id)
-    )`);
-
-    // Budgets table
-    db.run(`CREATE TABLE IF NOT EXISTS budgets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT UNIQUE,
-        limit_amount REAL
-    )`);
-
-    // Notifications table
-    db.run(`CREATE TABLE IF NOT EXISTS notifications (
-        id TEXT PRIMARY KEY,
-        recipientId INTEGER,
-        message TEXT,
-        date TEXT,
-        read INTEGER DEFAULT 0,
-        FOREIGN KEY (recipientId) REFERENCES users(id)
-    )`);
-
-    // Settings table (per user)
-    db.run(`CREATE TABLE IF NOT EXISTS settings (
-        userId INTEGER PRIMARY KEY,
-        sessionTimeout INTEGER DEFAULT 30,
-        loginNotifications INTEGER DEFAULT 1,
-        FOREIGN KEY (userId) REFERENCES users(id)
-    )`);
+// User Schema
+const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: 'EMPLOYEE' },
+    phone: { type: String },
+    managerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    created: { type: String },
+    uniqueId: { type: String },
+    profileImage: { type: String },
+    twoFactorEnabled: { type: Boolean, default: false }
 });
 
-module.exports = db;
+// Expense Schema
+const expenseSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true }, // Keeping custom ID for frontend compatibility
+    employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    amount: { type: Number, required: true },
+    category: { type: String, required: true },
+    date: { type: String, required: true },
+    status: { type: String, default: 'PENDING' }
+});
+
+// Budget Schema
+const budgetSchema = new mongoose.Schema({
+    category: { type: String, required: true, unique: true },
+    limit: { type: Number, required: true }
+});
+
+// Notification Schema
+const notificationSchema = new mongoose.Schema({
+    id: { type: String, required: true, unique: true },
+    recipientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    message: { type: String, required: true },
+    date: { type: String, required: true },
+    read: { type: Boolean, default: false }
+});
+
+// Settings Schema
+const settingsSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Can be null for global settings
+    sessionTimeout: { type: Number, default: 30 },
+    loginNotifications: { type: Boolean, default: true }
+});
+
+const User = mongoose.model('User', userSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
+const Budget = mongoose.model('Budget', budgetSchema);
+const Notification = mongoose.model('Notification', notificationSchema);
+const Settings = mongoose.model('Settings', settingsSchema);
+
+module.exports = {
+    User,
+    Expense,
+    Budget,
+    Notification,
+    Settings,
+    mongoose
+};

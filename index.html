@@ -895,6 +895,77 @@
         input:checked+.slider:before {
             transform: translateX(24px);
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-section {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .landing-nav .nav-links {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .signup-box {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .auth-wrapper {
+                padding: 10px;
+            }
+
+            .admin-nav {
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 5px;
+            }
+
+            .user-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .data-management {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .profile-page>div:first-child>div {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            input,
+            select,
+            button {
+                min-height: 44px;
+                font-size: 16px !important;
+            }
+
+            /* Touch targets + No iOS zoom */
+            .card[style*="position: fixed"] {
+                width: 95% !important;
+                margin: 2.5%;
+            }
+
+            /* Responsive Modals */
+        }
     </style>
 </head>
 
@@ -1527,18 +1598,25 @@
 
         // Enhanced data persistence with multiple storage options
         // Dynamic API URL - works in both development and production
-        const API_URL = window.location.hostname === 'localhost'
+        const API_URL = (window.location.hostname === '' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5000/api'
             : '/api';
 
         const ApiService = {
+            async handleResponse(res) {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Request failed');
+                }
+                return data;
+            },
             async signup(user) {
                 const res = await fetch(`${API_URL}/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(user)
                 });
-                return res.json();
+                return this.handleResponse(res);
             },
             async login(email, password) {
                 const res = await fetch(`${API_URL}/login`, {
@@ -1546,70 +1624,79 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                if (!res.ok) throw new Error('Login failed');
-                return res.json();
+                return this.handleResponse(res);
             },
             async getData() {
                 const res = await fetch(`${API_URL}/data`);
-                return res.json();
+                return this.handleResponse(res);
             },
             async saveExpenses(expenses) {
-                return fetch(`${API_URL}/expenses`, {
+                const res = await fetch(`${API_URL}/expenses`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(expenses)
                 });
+                return this.handleResponse(res);
             },
             async updateExpense(id, status) {
-                return fetch(`${API_URL}/expenses/${id}`, {
+                const res = await fetch(`${API_URL}/expenses/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
+                return this.handleResponse(res);
             },
             async saveBudget(category, limit) {
-                return fetch(`${API_URL}/budgets`, {
+                const res = await fetch(`${API_URL}/budgets`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ category, limit })
                 });
+                return this.handleResponse(res);
             },
             async deleteBudget(id) {
-                return fetch(`${API_URL}/budgets/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/budgets/${id}`, { method: 'DELETE' });
+                return this.handleResponse(res);
             },
             async updateUser(id, userData) {
-                return fetch(`${API_URL}/users/${id}`, {
+                const res = await fetch(`${API_URL}/users/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
+                return this.handleResponse(res);
             },
             async deleteUser(id) {
-                return fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                return this.handleResponse(res);
             },
             async clearNotifications(recipientId) {
-                return fetch(`${API_URL}/notifications/clear`, {
+                const res = await fetch(`${API_URL}/notifications/clear`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ recipientId })
                 });
+                return this.handleResponse(res);
             },
             async saveNotifications(notifications) {
-                return fetch(`${API_URL}/notifications`, {
+                const res = await fetch(`${API_URL}/notifications`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(notifications)
                 });
+                return this.handleResponse(res);
             },
             async updateSettings(settings) {
-                return fetch(`${API_URL}/settings`, {
+                const res = await fetch(`${API_URL}/settings`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(settings)
                 });
+                return this.handleResponse(res);
             },
             async clearAllData() {
-                return fetch(`${API_URL}/clear-all`, { method: 'POST' });
+                const res = await fetch(`${API_URL}/clear-all`, { method: 'POST' });
+                return this.handleResponse(res);
             }
         };
 
@@ -1741,14 +1828,14 @@
                     const distance = faceapi.euclideanDistance(detections.descriptor, referenceDetections.descriptor);
                     console.log('Face verification distance:', distance);
 
-                    // Threshold usually 0.6 for ssdMobilenetv1
-                    if (distance < 0.6) {
+                    // Threshold tightened from 0.4 to ensure 100% user verification
+                    if (distance < 0.4) {
                         setStatus('success');
-                        setMessage('Verification successful! Face matched (Score: ' + distance.toFixed(3) + ')');
+                        setMessage('Verification successful! Identity confirmed.');
                         setTimeout(() => onSuccess(), 1500);
                     } else {
                         setStatus('ready');
-                        setMessage('Face mismatch (Score: ' + distance.toFixed(3) + '). Please ensure good lighting and face visibility.');
+                        setMessage('Face mismatch. Please ensure good lighting and face visibility.');
                     }
                 } catch (err) {
                     console.error("Verification error:", err);
@@ -3957,7 +4044,7 @@
                     setView('login');
                     setAuthMessage({ text: "Account created successfully! Please log in.", type: 'success' });
                 } catch (e) {
-                    setAuthMessage({ text: "Sign up failed. Email might already be in use.", type: 'error' });
+                    setAuthMessage({ text: e.message || "Sign up failed. Please try again.", type: 'error' });
                 }
             };
 
