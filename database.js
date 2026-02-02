@@ -1,11 +1,31 @@
 const mongoose = require('mongoose');
 
-// MongoDB Connection URI - using provided local connection
+// MongoDB Connection URI
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ledgercore';
 
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log('Successfully connected to MongoDB: ' + MONGODB_URI))
-    .catch(err => console.error('MongoDB connection error:', err));
+// Log the URI (masking password) to verify it's correctly loaded
+const maskedUri = MONGODB_URI.replace(/:([^@]+)@/, ':****@');
+console.log('Attempting to connect to MongoDB:', maskedUri);
+
+mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000, // Stay under 10s to see the real error
+    socketTimeoutMS: 45000,
+})
+    .then(() => console.log('✅ Successfully connected to MongoDB'))
+    .catch(err => {
+        console.error('❌ MongoDB connection error:', err.message);
+        if (err.message.includes('password')) console.error('TIP: Check your database user password.');
+        if (err.message.includes('IP')) console.error('TIP: Ensure you added "Allow Access from Anywhere" in MongoDB Atlas.');
+    });
+
+// Explicit event listeners for connection status
+mongoose.connection.on('error', err => {
+    console.error('MongoDB connection event error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.warn('MongoDB disconnected. Reconnecting...');
+});
 
 // User Schema
 const userSchema = new mongoose.Schema({
