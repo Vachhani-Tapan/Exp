@@ -2,3 +2,4 @@ data/
 node_modules/
 ledgercore.db
 .DS_Store
+.env

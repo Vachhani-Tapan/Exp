@@ -431,8 +431,8 @@
         }
 
         .message.error {
-            background-color: #991b1b;
-            color: #fef2f2;
+            background-color: green;
+            color: #fecaca;
         }
 
         .message.success {
@@ -895,77 +895,6 @@
         input:checked+.slider:before {
             transform: translateX(24px);
         }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-section {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .landing-nav .nav-links {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                font-size: 14px;
-            }
-
-            .summary-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .signup-box {
-                padding: 20px;
-                width: 95%;
-            }
-
-            .auth-wrapper {
-                padding: 10px;
-            }
-
-            .admin-nav {
-                overflow-x: auto;
-                white-space: nowrap;
-                padding-bottom: 5px;
-            }
-
-            .user-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .data-management {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .profile-page>div:first-child>div {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            input,
-            select,
-            button {
-                min-height: 44px;
-                font-size: 16px !important;
-            }
-
-            /* Touch targets + No iOS zoom */
-            .card[style*="position: fixed"] {
-                width: 95% !important;
-                margin: 2.5%;
-            }
-
-            /* Responsive Modals */
-        }
     </style>
 </head>
 
@@ -1294,7 +1223,6 @@
                                 <h2 style={{ color: '#111827', margin: 0, fontSize: '1.5rem', fontWeight: 'bold' }}>Profile Information</h2>
                                 {!isEditing ? (
                                     <button
-                                        type="button"
                                         onClick={() => setIsEditing(true)}
                                         style={{
                                             background: '#2563EB',
@@ -1319,14 +1247,12 @@
                                 ) : (
                                     <div style={{ display: 'flex', gap: '12px' }}>
                                         <button
-                                            type="button"
                                             onClick={() => setIsEditing(false)}
                                             style={{ background: 'transparent', color: '#4B5563', border: '1px solid #D1D5DB', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
                                         >
                                             Cancel
                                         </button>
                                         <button
-                                            type="button"
                                             onClick={handleSaveProfile}
                                             style={{ background: '#10B981', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
                                         >
@@ -1456,7 +1382,6 @@
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {/* Change Password Button */}
                                 <button
-                                    type="button"
                                     onClick={() => setShowPasswordModal(true)}
                                     style={{
                                         background: 'white',
@@ -1478,7 +1403,6 @@
                                 {/* 2FA Toggle - Admin Only */}
                                 {user.role === 'ADMIN' && (
                                     <button
-                                        type="button"
                                         onClick={handleToggle2FA}
                                         style={{
                                             background: 'white',
@@ -1597,113 +1521,38 @@
         }
 
         // Enhanced data persistence with multiple storage options
-        // Dynamic API URL - works in both development and production
-        const API_URL = (window.location.hostname === '' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000/api'
-            : '/api';
-
-        const ApiService = {
-            async handleResponse(res) {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.error || 'Request failed');
-                }
-                return data;
-            },
-            async signup(user) {
-                const res = await fetch(`${API_URL}/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(user)
-                });
-                return this.handleResponse(res);
-            },
-            async login(email, password) {
-                const res = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                return this.handleResponse(res);
-            },
-            async getData() {
-                const res = await fetch(`${API_URL}/data`);
-                return this.handleResponse(res);
-            },
-            async saveExpenses(expenses) {
-                const res = await fetch(`${API_URL}/expenses`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(expenses)
-                });
-                return this.handleResponse(res);
-            },
-            async updateExpense(id, status) {
-                const res = await fetch(`${API_URL}/expenses/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
-                });
-                return this.handleResponse(res);
-            },
-            async saveBudget(category, limit) {
-                const res = await fetch(`${API_URL}/budgets`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ category, limit })
-                });
-                return this.handleResponse(res);
-            },
-            async deleteBudget(id) {
-                const res = await fetch(`${API_URL}/budgets/${id}`, { method: 'DELETE' });
-                return this.handleResponse(res);
-            },
-            async updateUser(id, userData) {
-                const res = await fetch(`${API_URL}/users/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
-                return this.handleResponse(res);
-            },
-            async deleteUser(id) {
-                const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
-                return this.handleResponse(res);
-            },
-            async clearNotifications(recipientId) {
-                const res = await fetch(`${API_URL}/notifications/clear`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recipientId })
-                });
-                return this.handleResponse(res);
-            },
-            async saveNotifications(notifications) {
-                const res = await fetch(`${API_URL}/notifications`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(notifications)
-                });
-                return this.handleResponse(res);
-            },
-            async updateSettings(settings) {
-                const res = await fetch(`${API_URL}/settings`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-                return this.handleResponse(res);
-            },
-            async clearAllData() {
-                const res = await fetch(`${API_URL}/clear-all`, { method: 'POST' });
-                return this.handleResponse(res);
-            }
-        };
-
         const DataManager = {
+            // Save to localStorage with timestamp
+            saveToLocalStorage: (data) => {
+                const dataWithTimestamp = {
+                    ...data,
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem('ledgercore_data_v2', JSON.stringify(dataWithTimestamp));
+                console.log('Data saved to localStorage at:', dataWithTimestamp.lastSaved);
+            },
+
+            // Load from localStorage
+            loadFromLocalStorage: () => {
+                const saved = localStorage.getItem('ledgercore_data_v2');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        console.log('Data loaded from localStorage, last saved:', parsed.lastSaved);
+                        return parsed;
+                    } catch (e) {
+                        console.error('Error parsing localStorage data:', e);
+                    }
+                }
+                console.log('No saved data found, using initial data');
+                return initialData;
+            },
+
+            // Export data as JSON file
             exportData: (data) => {
                 const dataStr = JSON.stringify(data, null, 2);
                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -1712,18 +1561,47 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+
+                console.log('Data exported successfully');
             },
+
+            // Import data from JSON file
             importData: (file, callback) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
                         const importedData = JSON.parse(e.target.result);
+                        console.log('Data imported successfully');
                         callback(importedData);
                     } catch (error) {
-                        alert('Invalid file format.');
+                        console.error('Error parsing imported file:', error);
+                        alert('Invalid file format. Please select a valid JSON backup file.');
                     }
                 };
                 reader.readAsText(file);
+            },
+
+            // Clear all data (reset to initial)
+            clearData: () => {
+                if (window.confirm('Are you sure you want to clear all data? This will delete ALL expenses and budgets, but preserve your admin account. This action cannot be undone.')) {
+                    const resetData = {
+                        ...initialData,
+                        expenses: [],
+                        notifications: [],
+                        budgets: []
+                    };
+                    localStorage.removeItem('ledgercore_data_v2');
+                    console.log('All data cleared - expenses and budgets reset to zero');
+                    return resetData;
+                }
+                return null;
+            },
+
+            // Auto-save every 5 minutes
+            enableAutoSave: (data, setData) => {
+                return setInterval(() => {
+                    DataManager.saveToLocalStorage(data);
+                }, 5 * 60 * 1000); // 5 minutes
             }
         };
 
@@ -1828,14 +1706,14 @@
                     const distance = faceapi.euclideanDistance(detections.descriptor, referenceDetections.descriptor);
                     console.log('Face verification distance:', distance);
 
-                    // Threshold tightened from 0.4 to ensure 100% user verification
-                    if (distance < 0.4) {
+                    // Threshold usually 0.6 for ssdMobilenetv1
+                    if (distance < 0.6) {
                         setStatus('success');
-                        setMessage('Verification successful! Identity confirmed.');
+                        setMessage('Verification successful! Face matched (Score: ' + distance.toFixed(3) + ')');
                         setTimeout(() => onSuccess(), 1500);
                     } else {
                         setStatus('ready');
-                        setMessage('Face mismatch. Please ensure good lighting and face visibility.');
+                        setMessage('Face mismatch (Score: ' + distance.toFixed(3) + '). Please ensure good lighting and face visibility.');
                     }
                 } catch (err) {
                     console.error("Verification error:", err);
@@ -1950,7 +1828,7 @@
                             <a href="#">Company</a>
                         </div>
                         <div>
-                            <button type="button" className="btn" onClick={switchToLogin}>Login</button>
+                            <button className="btn" onClick={switchToLogin}>Login</button>
                         </div>
                     </nav>
                     <section className="hero-section">
@@ -1958,8 +1836,8 @@
                             <h1>Expense management software</h1>
                             <p>Choose expense management software that shows you employee expenses in real time. Monitor team budgets, track requests and approvals, reimburse expenses, and embrace admin.</p>
                             <div className="hero-buttons">
-                                <button type="button" className="btn" onClick={switchToSignUp}>Sign Up</button>
-                                <button type="button" className="btn btn-secondary" onClick={switchToLogin}>Login</button>
+                                <button className="btn" onClick={switchToSignUp}>Sign Up</button>
+                                <button className="btn btn-secondary" onClick={switchToLogin}>Login</button>
                             </div>
                         </div>
                         <div className="hero-image">
@@ -1981,7 +1859,7 @@
         }
 
         // Sign Up Page
-        function SignUpPage({ onSignUp, switchToLogin, message }) {
+        function SignUpPage({ onSignUp, switchToLogin, error }) {
             const [name, setName] = useState('');
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -2007,11 +1885,7 @@
                             <div className="input-group"><input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder=" " required /><label>Confirm Password</label></div>
                             <button type="submit">Sign Up</button>
                         </form>
-                        {message && message.text && (
-                            <div className={`message ${message.type}`}>
-                                {message.text}
-                            </div>
-                        )}
+                        {error && <div className="message error">{error}</div>}
                         <div className="login-link">Already have an account? <a onClick={switchToLogin}>Log In</a></div>
                     </div>
                 </div>
@@ -2019,25 +1893,21 @@
         }
 
         // Login Page
-        function LoginPage({ onLogin, switchToSignUp, message }) {
+        function LoginPage({ onLogin, switchToSignUp, error }) {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const handleSubmit = (e) => { e.preventDefault(); onLogin(email, password); };
 
             return (
                 <div className="auth-wrapper">
-                    <div className="signup-box" style={{ border: message && message.type === 'error' ? '2px solid #dc2626' : '' }}>
+                    <div className="signup-box">
                         <h2>Welcome Back</h2>
                         <form onSubmit={handleSubmit}>
                             <div className="input-group"><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder=" " required /><label>Email</label></div>
                             <div className="input-group"><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder=" " required /><label>Password</label></div>
                             <button type="submit">Login</button>
                         </form>
-                        {message && message.text && (
-                            <div className={`message ${message.type}`}>
-                                {message.text}
-                            </div>
-                        )}
+                        {error && <div className="message error">{error}</div>}
                         <div className="login-link">Don't have an account? <a onClick={switchToSignUp}>Sign Up</a></div>
                     </div>
                 </div>
@@ -2219,7 +2089,7 @@
                                     ) : <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>No unsubmitted expenses</p>}
 
                                     {localExpenses.length > 0 && (
-                                        <button type="button" className="approve-btn" onClick={handleSubmitForApproval} style={{ width: '100%', marginTop: '1rem' }}>
+                                        <button className="approve-btn" onClick={handleSubmitForApproval} style={{ width: '100%', marginTop: '1rem' }}>
                                             Submit {localExpenses.length} Expenses for Approval
                                         </button>
                                     )}
@@ -2369,13 +2239,12 @@
                             <h2 style={{ border: 'none', padding: 0, margin: 0 }}>
                                 {selectedCategory ? `${selectedCategory} Expenses` : 'Expense Analytics'}
                             </h2>
-                            <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
+                            <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
                         </div>
 
                         {selectedCategory ? (
                             <div style={{ animation: 'fadeIn 0.3s ease' }}>
                                 <button
-                                    type="button"
                                     onClick={() => setSelectedCategory(null)}
                                     style={{
                                         marginBottom: '15px',
@@ -2544,7 +2413,6 @@
                                 <p style={{ margin: 0, color: '#9CA3AF', fontSize: '0.9rem' }}>Detailed breakdown of expenses and trends</p>
                             </div>
                             <button
-                                type="button"
                                 onClick={onClose}
                                 style={{
                                     background: '#374151',
@@ -2924,7 +2792,6 @@
 
                                             {/* Actions */}
                                             <button
-                                                type="button"
                                                 title="Edit Limit"
                                                 onClick={(e) => startEdit(e, budget)}
                                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}
@@ -2932,7 +2799,6 @@
                                                 ✏️
                                             </button>
                                             <button
-                                                type="button"
                                                 title="Delete Budget"
                                                 onClick={(e) => confirmDelete(e, budget.id)}
                                                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.1rem' }}
@@ -3088,7 +2954,6 @@
                             <p style={{ color: '#9CA3AF', margin: 0 }}>{users.length} users in your organization</p>
                         </div>
                         <button
-                            type="button"
                             onClick={() => setShowCreateModal(true)}
                             style={{
                                 background: '#2563EB',
@@ -3500,14 +3365,12 @@
                         {isAdmin && (
                             <>
                                 <button
-                                    type="button"
                                     className={activeTab === 'budget' ? 'active' : ''}
                                     onClick={() => setActiveTab('budget')}
                                 >
                                     Budget Management
                                 </button>
                                 <button
-                                    type="button"
                                     className={activeTab === 'users' ? 'active' : ''}
                                     onClick={() => setActiveTab('users')}
                                 >
@@ -3688,10 +3551,10 @@
                                                         <small>Date: {exp.date}</small>
                                                     </div>
                                                     <div>
-                                                        <button type="button" className="approve-btn" onClick={() => handleManagerApproval(exp.id, true)}>
+                                                        <button className="approve-btn" onClick={() => handleManagerApproval(exp.id, true)}>
                                                             Approve
                                                         </button>
-                                                        <button type="button" className="reject-btn" onClick={() => handleManagerApproval(exp.id, false)}>
+                                                        <button className="reject-btn" onClick={() => handleManagerApproval(exp.id, false)}>
                                                             Reject
                                                         </button>
                                                     </div>
@@ -3716,10 +3579,10 @@
                                                         <small>Date: {exp.date} • Manager: {getManagerName(exp.employeeId)}</small>
                                                     </div>
                                                     <div>
-                                                        <button type="button" className="approve-btn" onClick={() => handleAdminApproval(exp.id, true)}>
+                                                        <button className="approve-btn" onClick={() => handleAdminApproval(exp.id, true)}>
                                                             Approve
                                                         </button>
-                                                        <button type="button" className="reject-btn" onClick={() => handleAdminApproval(exp.id, false)}>
+                                                        <button className="reject-btn" onClick={() => handleAdminApproval(exp.id, false)}>
                                                             Reject
                                                         </button>
                                                     </div>
@@ -3847,7 +3710,7 @@
                             {/* Actions & Notifications */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div className="notification-container">
-                                    <button type="button" className="notification-bell" onClick={handleNotificationClick} title="Notifications" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '12px', cursor: 'pointer' }}>
+                                    <button className="notification-bell" onClick={handleNotificationClick} title="Notifications" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: '12px', cursor: 'pointer' }}>
                                         🔔
                                         {unreadCount > 0 && <span className="notification-badge" style={{ top: '-5px', right: '-5px' }}>{unreadCount}</span>}
                                     </button>
@@ -3860,15 +3723,15 @@
                                     )}
                                 </div>
 
-                                <button type="button" onClick={onLogout} className="logout-btn" style={{ margin: 0, padding: '10px 24px', borderRadius: '12px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Logout</button>
+                                <button onClick={onLogout} className="logout-btn" style={{ margin: 0, padding: '10px 24px', borderRadius: '12px', background: '#EF4444', color: 'white', fontWeight: 'bold' }}>Logout</button>
                             </div>
                         </div>
 
                         {/* Data Management & Messages */}
                         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center' }}>
-                            <button type="button" className="backup-btn" onClick={handleExport} style={{ fontSize: '0.8rem', opacity: 0.8 }}>Export Backup</button>
+                            <button className="backup-btn" onClick={handleExport} style={{ fontSize: '0.8rem', opacity: 0.8 }}>Export Backup</button>
                             {loggedInUser.role === 'ADMIN' && (
-                                <button type="button" className="delete-btn" onClick={handleClear} style={{ fontSize: '0.8rem', opacity: 0.8 }}>Clear All</button>
+                                <button className="delete-btn" onClick={handleClear} style={{ fontSize: '0.8rem', opacity: 0.8 }}>Clear All</button>
                             )}
                             {showMessage && <span style={{ fontSize: '0.85rem', color: '#10B981', marginLeft: '10px' }}>{message}</span>}
                         </div>
@@ -3909,54 +3772,22 @@
 
         // Main App
         function App() {
-            // Try to restore session from sessionStorage on page load
-            const getInitialUser = () => {
-                try {
-                    const savedUser = sessionStorage.getItem('ledgercore_user');
-                    return savedUser ? JSON.parse(savedUser) : null;
-                } catch (e) {
-                    return null;
-                }
-            };
-
-            const getInitialView = () => {
-                try {
-                    const savedView = sessionStorage.getItem('ledgercore_view');
-                    return savedView || 'landing';
-                } catch (e) {
-                    return 'landing';
-                }
-            };
-
-            const [view, setView] = useState(getInitialView);
-            const [loggedInUser, setLoggedInUser] = useState(getInitialUser);
+            const [view, setView] = useState('landing');
+            const [loggedInUser, setLoggedInUser] = useState(null);
             const [pending2FAUser, setPending2FAUser] = useState(null);
-            const [authMessage, setAuthMessage] = useState({ text: '', type: '' });
-            const [data, setData] = useState(initialData);
+            const [error, setError] = useState('');
+            const [data, setData] = useState(DataManager.loadFromLocalStorage());
 
-            // Persist session to sessionStorage whenever it changes
+            // Save data when it changes
             useEffect(() => {
-                if (loggedInUser) {
-                    sessionStorage.setItem('ledgercore_user', JSON.stringify(loggedInUser));
-                    sessionStorage.setItem('ledgercore_view', view);
-                } else {
-                    sessionStorage.removeItem('ledgercore_user');
-                    sessionStorage.removeItem('ledgercore_view');
-                }
-            }, [loggedInUser, view]);
+                DataManager.saveToLocalStorage(data);
+            }, [data]);
 
-            const refreshData = async () => {
-                try {
-                    const result = await ApiService.getData();
-                    setData(result);
-                } catch (e) {
-                    console.error("Failed to fetch data", e);
-                }
-            };
-
+            // Set up auto-save
             useEffect(() => {
-                refreshData();
-            }, []);
+                const autoSaveInterval = DataManager.enableAutoSave(data, setData);
+                return () => clearInterval(autoSaveInterval);
+            }, [data]);
 
             // Session Timeout Logic
             useEffect(() => {
@@ -4004,324 +3835,325 @@
                 return Math.floor(10000000 + Math.random() * 90000000).toString();
             };
 
-            const handleSignUp = async (newUser) => {
+            const handleSignUp = (newUser) => {
                 if (newUser.password !== newUser.confirmPassword) {
-                    setAuthMessage({ text: "Passwords do not match.", type: 'error' });
+                    setError("Passwords do not match.");
+                    return;
+                }
+                if (data.users.find(u => u.email === newUser.email)) {
+                    setError("An account with this email already exists.");
                     return;
                 }
 
-                try {
-                    setAuthMessage({ text: '', type: '' });
-                    let managerId = null;
-                    if (newUser.role === 'MANAGER') {
-                        const admin = data.users.find(u => u.role === 'ADMIN');
-                        managerId = admin ? admin.id : null;
-                    }
+                setError('');
 
-                    const userToCreate = {
-                        name: newUser.name,
-                        email: newUser.email,
-                        password: newUser.password,
-                        role: newUser.role,
-                        managerId: managerId,
-                        created: new Date().toLocaleDateString(),
-                        uniqueId: generateUniqueId()
-                    };
-
-                    await ApiService.signup(userToCreate);
-
-                    const admins = data.users.filter(u => u.role === 'ADMIN');
-                    const adminNotes = admins.map(admin => {
-                        let msg = `New ${newUser.role} ${newUser.name} registered.`;
-                        return addNotification(admin.id, msg);
-                    });
-
-                    if (adminNotes.length > 0) {
-                        await ApiService.saveNotifications(adminNotes);
-                    }
-
-                    await refreshData();
-                    setView('login');
-                    setAuthMessage({ text: "Account created successfully! Please log in.", type: 'success' });
-                } catch (e) {
-                    setAuthMessage({ text: e.message || "Sign up failed. Please try again.", type: 'error' });
+                let managerId = null;
+                if (newUser.role === 'MANAGER') {
+                    const admin = data.users.find(u => u.role === 'ADMIN');
+                    managerId = admin ? admin.id : null;
                 }
+
+                const userToCreate = {
+                    id: Date.now(),
+                    name: newUser.name,
+                    email: newUser.email,
+                    password: newUser.password,
+                    role: newUser.role,
+                    managerId: managerId,
+                    created: new Date().toLocaleDateString(),
+                    uniqueId: generateUniqueId()
+                };
+
+                // Notify Admins about new signup with specific details
+                const admins = data.users.filter(u => u.role === 'ADMIN');
+                const adminNotes = admins.map(admin => {
+                    let msg = "";
+                    if (newUser.role === 'EMPLOYEE') {
+                        msg = `New Employee ${newUser.name} registered. Action Needed: Assign Manager.`;
+                    } else if (newUser.role === 'MANAGER') {
+                        msg = `New Manager ${newUser.name} registered.`;
+                    } else {
+                        msg = `New Admin ${newUser.name} registered.`;
+                    }
+                    return addNotification(admin.id, msg);
+                });
+
+                const newData = {
+                    ...data,
+                    users: [...data.users, userToCreate],
+                    notifications: [...(data.notifications || []), ...adminNotes]
+                };
+                setData(newData);
+                setView('login');
+                setError("Account created successfully! Please log in.");
             };
 
-            const handleLogin = async (email, password) => {
-                setAuthMessage({ text: '', type: '' });
-                try {
-                    const user = await ApiService.login(email, password);
-                    if (user.twoFactorEnabled && user.profileImage) {
-                        setPending2FAUser(user);
+            const handleLogin = (email, password) => {
+                setError('');
+                const foundUser = data.users.find(user => user.email === email && user.password === password);
+                if (foundUser) {
+                    if (foundUser.twoFactorEnabled && foundUser.profileImage) {
+                        setPending2FAUser(foundUser);
                         setView('face-verify');
                     } else {
-                        setLoggedInUser(user);
+                        setLoggedInUser(foundUser);
                         setView('dashboard');
                     }
-                } catch (e) {
-                    setAuthMessage({ text: "Invalid email or password.", type: 'error' });
+                } else {
+                    setError("Invalid email or password.");
                 }
             };
 
             const handleLogout = () => {
                 setLoggedInUser(null);
-                setAuthMessage({ text: '', type: '' });
                 setView('landing');
-                // Clear session storage on explicit logout
-                sessionStorage.removeItem('ledgercore_user');
-                sessionStorage.removeItem('ledgercore_view');
             };
 
-            const handleExpenseSubmit = async (localExpenses) => {
+            const handleExpenseSubmit = (localExpenses) => {
                 const newExpenses = localExpenses.map(exp => ({
                     ...exp,
-                    id: (Date.now() + Math.random()).toString(),
+                    id: Date.now() + Math.random(),
                     employeeId: loggedInUser.id,
                     status: 'PENDING'
                 }));
 
-                try {
-                    await ApiService.saveExpenses(newExpenses);
+                let notificationsToAdd = [];
 
-                    let notificationsToAdd = [];
-                    if (loggedInUser.managerId) {
-                        notificationsToAdd.push(addNotification(
-                            loggedInUser.managerId,
-                            `Employee ${loggedInUser.name} submitted ${localExpenses.length} expenses.`
-                        ));
-                    }
-                    const admins = data.users.filter(u => u.role === 'ADMIN');
-                    admins.forEach(admin => {
-                        notificationsToAdd.push(addNotification(
-                            admin.id,
-                            `Employee ${loggedInUser.name} added ${localExpenses.length} new expenses.`
-                        ));
-                    });
-
-                    if (notificationsToAdd.length > 0) {
-                        await ApiService.saveNotifications(notificationsToAdd);
-                    }
-
-                    await refreshData();
-                } catch (e) {
-                    alert("Failed to submit expenses.");
+                // 1. Notify Manager
+                if (loggedInUser.managerId) {
+                    notificationsToAdd.push(addNotification(
+                        loggedInUser.managerId,
+                        `Employee ${loggedInUser.name} submitted ${localExpenses.length} expenses.`
+                    ));
                 }
+
+                // 2. Notify Admins (Trigger #5)
+                const admins = data.users.filter(u => u.role === 'ADMIN');
+                admins.forEach(admin => {
+                    notificationsToAdd.push(addNotification(
+                        admin.id,
+                        `Employee ${loggedInUser.name} added ${localExpenses.length} new expenses.`
+                    ));
+                });
+
+                const newData = {
+                    ...data,
+                    expenses: [...data.expenses, ...newExpenses],
+                    notifications: [...(data.notifications || []), ...notificationsToAdd]
+                };
+                setData(newData);
             };
 
-            const handleAddBudget = async (category, limit) => {
-                try {
-                    await ApiService.saveBudget(category, limit);
-                    await refreshData();
-                    alert(`Budget for ${category} set to ₹${limit}`);
-                } catch (e) {
-                    alert("Failed to add budget.");
+            const handleAddBudget = (category, limit) => {
+                const newBudget = {
+                    id: Date.now(),
+                    category,
+                    limit
+                };
+                // Update if exists, else add
+                const existingIndex = (data.budgets || []).findIndex(b => b.category === category);
+                let updatedBudgets;
+                if (existingIndex >= 0) {
+                    updatedBudgets = [...(data.budgets || [])];
+                    updatedBudgets[existingIndex] = { ...updatedBudgets[existingIndex], limit };
+                } else {
+                    updatedBudgets = [...(data.budgets || []), newBudget];
                 }
+
+                const newData = { ...data, budgets: updatedBudgets };
+                setData(newData);
+                alert(`Budget for ${category} set to ₹${limit}`);
             };
 
-            const handleEditBudget = async (id, newLimit) => {
-                const budget = data.budgets.find(b => b.id === id);
-                if (budget) {
-                    await handleAddBudget(budget.category, newLimit);
-                }
+            const handleEditBudget = (id, newLimit) => {
+                const updatedBudgets = (data.budgets || []).map(b =>
+                    b.id === id ? { ...b, limit: newLimit } : b
+                );
+                const newData = { ...data, budgets: updatedBudgets };
+                setData(newData);
             };
 
-            const handleDeleteBudget = async (id) => {
-                try {
-                    await ApiService.deleteBudget(id);
-                    await refreshData();
-                } catch (e) {
-                    alert("Failed to delete budget.");
-                }
+            const handleDeleteBudget = (id) => {
+                const updatedBudgets = (data.budgets || []).filter(b => b.id !== id);
+                const newData = { ...data, budgets: updatedBudgets };
+                setData(newData);
             };
 
-            const handleDeleteUser = async (userId) => {
+            const handleDeleteUser = (userId) => {
+                // Prevent deleting own account
                 if (userId === loggedInUser.id) {
                     alert("You cannot delete your own account.");
                     return;
                 }
-                try {
-                    await ApiService.deleteUser(userId);
-                    await refreshData();
-                } catch (e) {
-                    alert("Failed to delete user.");
-                }
+                const updatedUsers = data.users.filter(u => u.id !== userId);
+                const newData = { ...data, users: updatedUsers };
+                setData(newData);
             };
 
-            const handleCreateUser = async (email, role) => {
+            const handleCreateUser = (email, role) => {
+                // Check if exists
                 if (data.users.find(u => u.email === email)) {
                     alert("A user with this email already exists!");
                     return null;
                 }
 
+                // Generate 8 digit random password
                 const generatedPassword = Math.floor(10000000 + Math.random() * 90000000).toString();
 
                 const newUser = {
-                    name: email.split('@')[0],
+                    id: Date.now(),
+                    name: email.split('@')[0], // Simple name derivation
                     email: email,
                     password: generatedPassword,
                     role: role,
-                    managerId: null,
+                    managerId: null, // Admin can assign later
                     created: new Date().toLocaleDateString(),
                     uniqueId: generateUniqueId()
                 };
 
-                try {
-                    await ApiService.signup(newUser);
-                    await refreshData();
-                    return newUser;
-                } catch (e) {
-                    alert("Failed to create user.");
-                    return null;
-                }
+                const newData = {
+                    ...data,
+                    users: [...data.users, newUser]
+                };
+                setData(newData);
+                return newUser; // Return to component to show success message
             };
 
-            const handleExpenseUpdate = async (expenseId, newStatus) => {
+            const handleExpenseUpdate = (expenseId, newStatus) => {
                 const expense = data.expenses.find(e => e.id === expenseId);
                 if (!expense) return;
 
-                try {
-                    await ApiService.updateExpense(expenseId, newStatus);
+                const employee = data.users.find(u => u.id === expense.employeeId);
+                let notificationsToAdd = [];
 
-                    const employee = data.users.find(u => u.id === expense.employeeId);
-                    let notificationsToAdd = [];
-
-                    let empMsg = `Your expense '${expense.name}' was ${newStatus.replace('_', ' ').toLowerCase()}.`;
-                    if (newStatus === 'APPROVED') {
-                        empMsg = `Admin accepted the expense '${expense.name}'.`;
-                    } else if (newStatus === 'REJECTED') {
-                        empMsg = `Admin rejected the expense '${expense.name}'.`;
-                    }
-
-                    notificationsToAdd.push(addNotification(
-                        expense.employeeId,
-                        empMsg
-                    ));
-
-                    if (newStatus === 'MANAGER_APPROVED') {
-                        const admins = data.users.filter(u => u.role === 'ADMIN');
-                        admins.forEach(admin => {
-                            notificationsToAdd.push(addNotification(
-                                admin.id,
-                                `Manager approved expense '${expense.name}' for ${employee ? employee.name : 'Unknown'}. Needs Final Approval.`
-                            ));
-                        });
-                    }
-
-                    if (notificationsToAdd.length > 0) {
-                        await ApiService.saveNotifications(notificationsToAdd);
-                    }
-
-                    await refreshData();
-                } catch (e) {
-                    alert("Failed to update expense.");
+                // 1. Notify Employee regarding specific Admin actions or generic updates
+                let empMsg = `Your expense '${expense.name}' was ${newStatus.replace('_', ' ').toLowerCase()}.`;
+                if (newStatus === 'APPROVED') {
+                    empMsg = `Admin accepted the expense '${expense.name}'.`;
+                } else if (newStatus === 'REJECTED') {
+                    empMsg = `Admin rejected the expense '${expense.name}'.`;
                 }
-            };
 
-            const handleAssignManager = async (employeeId, managerId) => {
-                try {
-                    await ApiService.updateUser(employeeId, { managerId });
+                notificationsToAdd.push(addNotification(
+                    expense.employeeId,
+                    empMsg
+                ));
 
-                    const employee = data.users.find(u => u.id === parseInt(employeeId));
-                    const manager = data.users.find(u => u.id === parseInt(managerId));
-
-                    let notificationsToAdd = [];
+                // 2. If Manager Approved -> Notify Admin (Trigger #6)
+                if (newStatus === 'MANAGER_APPROVED') {
                     const admins = data.users.filter(u => u.role === 'ADMIN');
                     admins.forEach(admin => {
                         notificationsToAdd.push(addNotification(
                             admin.id,
-                            `Successfully assigned Manager ${manager ? manager.name : 'Unknown'} to Employee ${employee ? employee.name : 'Unknown'}.`
+                            `Manager approved expense '${expense.name}' for ${employee ? employee.name : 'Unknown'}. Needs Final Approval.`
                         ));
                     });
-
-                    if (manager) {
-                        notificationsToAdd.push(addNotification(
-                            manager.id,
-                            `New Employee ${employee ? employee.name : 'Unknown'} is assigned to you.`
-                        ));
-                    }
-
-                    if (employee) {
-                        notificationsToAdd.push(addNotification(
-                            employee.id,
-                            `You have been assigned to Manager ${manager ? manager.name : 'Unknown'}.`
-                        ));
-                    }
-
-                    if (notificationsToAdd.length > 0) {
-                        await ApiService.saveNotifications(notificationsToAdd);
-                    }
-
-                    await refreshData();
-                    alert('Manager assigned successfully!');
-                } catch (e) {
-                    alert("Failed to assign manager.");
                 }
+
+                const newData = {
+                    ...data,
+                    expenses: data.expenses.map(exp =>
+                        exp.id === expenseId ? { ...exp, status: newStatus } : exp
+                    ),
+                    notifications: [...(data.notifications || []), ...notificationsToAdd]
+                };
+                setData(newData);
+            };
+
+            const handleAssignManager = (employeeId, managerId) => {
+                const employee = data.users.find(u => u.id === parseInt(employeeId));
+                const manager = data.users.find(u => u.id === parseInt(managerId));
+
+                let notificationsToAdd = [];
+
+                // Notify Admins (Trigger #4)
+                const admins = data.users.filter(u => u.role === 'ADMIN');
+                admins.forEach(admin => {
+                    notificationsToAdd.push(addNotification(
+                        admin.id,
+                        `Successfully assigned Manager ${manager ? manager.name : 'Unknown'} to Employee ${employee ? employee.name : 'Unknown'}.`
+                    ));
+                });
+
+                // Notify Manager
+                if (manager) {
+                    notificationsToAdd.push(addNotification(
+                        manager.id,
+                        `New Employee ${employee ? employee.name : 'Unknown'} is assigned to you.`
+                    ));
+                }
+
+                // Notify Employee
+                if (employee) {
+                    notificationsToAdd.push(addNotification(
+                        employee.id,
+                        `You have been assigned to Manager ${manager ? manager.name : 'Unknown'}.`
+                    ));
+                }
+
+                const newData = {
+                    ...data,
+                    users: data.users.map(user =>
+                        user.id === employeeId ? { ...user, managerId: managerId } : user
+                    ),
+                    notifications: [...(data.notifications || []), ...notificationsToAdd]
+                };
+                setData(newData);
+                alert('Manager assigned successfully!');
             };
 
 
 
-            const handleClearNotifications = async (userId) => {
-                try {
-                    await ApiService.clearNotifications(userId);
-                    await refreshData();
-                } catch (e) {
-                    console.error("Failed to clear notifications");
-                }
+            const handleClearNotifications = (userId) => {
+                const newData = {
+                    ...data,
+                    notifications: (data.notifications || []).filter(n => n.recipientId !== userId)
+                };
+                setData(newData);
             };
 
             const handleExportData = () => {
                 DataManager.exportData(data);
             };
 
-            const handleUpdateSettings = async (newSettings) => {
-                try {
-                    await ApiService.updateSettings(newSettings);
-                    await refreshData();
-                } catch (e) {
-                    alert("Failed to update settings.");
-                }
+            const handleUpdateSettings = (newSettings) => {
+                setData({ ...data, settings: newSettings });
             };
 
-            const handleImportData = async (file) => {
-                DataManager.importData(file, async (importedData) => {
-                    // This is complex for a real backend, usually just alert or ignore
-                    alert("Import not supported with backend yet. Use manual database tools.");
+            const handleImportData = (file) => {
+                DataManager.importData(file, (importedData) => {
+                    setData(importedData);
                 });
             };
 
-            const handleClearData = async () => {
-                if (window.confirm('Are you sure you want to clear all data?')) {
-                    try {
-                        await ApiService.clearAllData();
-                        await refreshData();
-                        return true;
-                    } catch (e) {
-                        alert("Failed to clear data.");
-                    }
+            const handleClearData = () => {
+                const result = DataManager.clearData();
+                if (result) {
+                    setData(result);
+                    return true;
                 }
                 return false;
             };
 
-            const handleUpdateProfile = async (updatedUser) => {
-                try {
-                    const { name, phone, profileImage, twoFactorEnabled, password } = updatedUser;
-                    await ApiService.updateUser(updatedUser.id, { name, phone, profileImage, twoFactorEnabled, password });
-                    await refreshData();
-                    // Update the local loggedInUser as well
-                    const refreshedUser = (await ApiService.getData()).users.find(u => u.id === updatedUser.id);
-                    if (refreshedUser) setLoggedInUser(refreshedUser);
-                } catch (e) {
-                    alert("Failed to update profile.");
-                }
+            const handleUpdateProfile = (updatedUser) => {
+                // Update the user in data
+                const newData = {
+                    ...data,
+                    users: data.users.map(user =>
+                        user.id === updatedUser.id ? updatedUser : user
+                    )
+                };
+                setData(newData);
+                // Also update loggedInUser to reflect changes immediately
+                setLoggedInUser(updatedUser);
             };
 
             const renderView = () => {
                 switch (view) {
                     case 'landing':
                         return <LandingPage
-                            switchToSignUp={() => { setView('signup'); setAuthMessage({ text: '', type: '' }); }}
-                            switchToLogin={() => { setView('login'); setAuthMessage({ text: '', type: '' }); }}
+                            switchToSignUp={() => setView('signup')}
+                            switchToLogin={() => setView('login')}
                         />;
                     case 'dashboard':
                         return <Dashboard
@@ -4350,8 +4182,8 @@
                     case 'login':
                         return <LoginPage
                             onLogin={handleLogin}
-                            switchToSignUp={() => { setView('signup'); setAuthMessage({ text: '', type: '' }); }}
-                            message={authMessage}
+                            switchToSignUp={() => { setView('signup'); setError(''); }}
+                            error={error}
                         />;
                     case 'face-verify':
                         return <FaceVerification
@@ -4370,8 +4202,8 @@
                     default:
                         return <SignUpPage
                             onSignUp={handleSignUp}
-                            switchToLogin={() => { setView('login'); setAuthMessage({ text: '', type: '' }); }}
-                            message={authMessage}
+                            switchToLogin={() => { setView('login'); setError(''); }}
+                            error={error}
                         />;
                 }
             };
